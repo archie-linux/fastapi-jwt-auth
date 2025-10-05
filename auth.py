@@ -3,6 +3,7 @@ from jose import JWTError, jwt
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
 from database import get_user, pwd_context
+from typing import List
 
 SECRET_KEY = "secret"
 ALGORITHM = "HS256"
@@ -22,9 +23,14 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def verify_token(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return get_user(payload["sub"])
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+def verify_role(allowed_roles: List[str]):
+    def role_checker(token: str = Depends(oauth2_scheme)):
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_role = payload.get("role")
+            if user_role not in allowed_roles:
+                raise HTTPException(status_code=403, detail="Permission denied")
+            return payload
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    return role_checker

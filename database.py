@@ -15,8 +15,8 @@ def get_user(username):
     users = read_db()["users"]
     return next((user for user in users if user["username"] == username), None)
 
-def add_user(username, password):
+def add_user(username, password, role="user"):
     users = read_db()
     hashed_password = pwd_context.hash(password)
-    users["users"].append({"username": username, "password": hashed_password})
+    users["users"].append({"username": username, "password": hashed_password, "role": role})
     write_db(users)
